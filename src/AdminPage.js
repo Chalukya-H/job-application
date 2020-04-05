@@ -7,17 +7,25 @@ class AdminPage extends React.Component {
     constructor(){
         super()
         this.state = {
-            jobdetails:[]
+            jobdetails:[],
+            jobTitle : ['Front-End Developer','Node.js Developer','MEAN Stack Developer','FULL Stack Developer'],
+            selected: 'Front-End Developer'
         }
 
     }
 
     handleSubmit = (e) =>{
-        const name = e.target.name
+        let selected = ''
+        if (e == undefined) {
+            selected = this.state.selected
+        } else { selected = e.target.name }
+         
+        // console.log(selected)
+         
+        this.setState ({selected})
          
         axios.get('http://dct-application-form.herokuapp.com/users/application-forms')
-        .then(response =>{
-             
+        .then(response =>{             
             var today = new Date();
             var dd = today.getDate()
             var mm = today.getMonth()+1
@@ -35,7 +43,7 @@ class AdminPage extends React.Component {
             
 
             const data = response.data.filter(jobdata => {
-                if(jobdata.createdAt.includes(date) && jobdata.jobTitle === name ){
+                if(jobdata.createdAt.includes(date) && jobdata.jobTitle === selected ){
                     return jobdata
                 }
             })
@@ -64,43 +72,34 @@ class AdminPage extends React.Component {
 
 
     handleJobStatus =(e,id) =>{
-        const value = e.target.name
-        if(value === 'shortlist'){
-            const status = {"status": "Shortlisted" }
-            axios.put(`http://dct-application-form.herokuapp.com/users/application-form/update/${id}`,status)
+        const status = e.target.name        
+            axios.put(`http://dct-application-form.herokuapp.com/users/application-form/update/${id}`,{status})
             .then(response =>{
                 console.log(response)
+                this.handleSubmit()
             })
 
             .catch(err =>{
                 console.log(err)
-            })
+            }) 
+    }
 
-        }
-        else if(value === 'reject'){
-            console.log(value)
-            const status = {"status": "rejected" }
-            axios.put(`http://dct-application-form.herokuapp.com/users/application-form/update/${id}`,status)
-            .then(response =>{
-                console.log(response)
-            })
-
-            .catch(err =>{
-                console.log(err)
-            })
-
-        }
+    componentDidMount = () =>{
+        this.handleSubmit()
     }
 
     render(){
         return(
             <div>
                 <h2> Admin Dashboard</h2>
-                <button name = 'Front-End Developer' onClick = {this.handleSubmit}  >Front-End Developer</button>
-                <button name ='Node.js Developer' onClick = {this.handleSubmit}>Node.js Developer </button>
-                <button name ='MEAN Stack Developer' onClick = {this.handleSubmit}>MEAN Stack Developer</button>
-                <button name = 'FULL Stack Developer' onClick = {this.handleSubmit}>FULL Stack Developer</button>
-                    <br/><br/>
+                {
+                    this.state.jobTitle.map((title,i) => 
+                        <button key= {i} name ={title} onClick = {this.handleSubmit}>{title}</button>
+                    )
+                }
+
+                <br/> 
+                <h2>{this.state.selected}</h2>
                 <table border = '1'>
                     <thead>
                         <tr>
@@ -126,10 +125,19 @@ class AdminPage extends React.Component {
                                             <td> <button onClick = { () => {
                                                         this.handleView(data._id)  }} >View Details</button></td>
                                             <td>
-                                                <button name ='shortlist' onClick = { (e) => {
-                                                        this.handleJobStatus(e,data._id)  }}>ShortList</button> 
-                                                <button name = 'reject' onClick = { (e) => {
-                                                        this.handleJobStatus(e,data._id)  }}>Reject</button>
+                                                {
+                                                    data.status === 'applied' ? (
+                                                     <div>
+                                                        <button name ='shortlisted' onClick = { (e) => {
+                                                            this.handleJobStatus(e,data._id)  }}>ShortList</button> 
+                                                        <button name = 'rejected' onClick = { (e) => {
+                                                            this.handleJobStatus(e,data._id)  }}>Reject</button>
+                                                    </div>
+                                                    ) : 
+                                                    <button name = {data.status } disabled> {data.status }</button> 
+                                                 
+                                                }
+                                                
                                             </td>
                                         </tr>
                                     )
